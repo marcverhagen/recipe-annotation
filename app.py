@@ -1,4 +1,4 @@
-"""Simple recipe annotation
+"""Simple relation annotation
 
 See README.md for more information.
 
@@ -7,56 +7,102 @@ See README.md for more information.
 import streamlit as st
 import pandas as pd
 
-import data
-from model import annotation, annotations, message
-from model import reset_annotation, reset_annotations, get_graph
+import utils
+from document import DOCUMENTS
+from model import state, parse_annotation, Graph
 
 
-current_recipe = data.RECIPES[0]
+def select_document(identifier=None):
+    state.reset_messages()
+    state.reset_annotation()
+    state.add_to_log(f'Selected document "{document_name}"')
+    if identifier is not None:
+        state.document = DOCUMENTS[identifier]
+    else:
+        pass
+
+def add_annotation(anno: str):
+    state.reset_messages()
+    parsed_annotation = parse_annotation(anno, state.document)
+    state.document.annotations.append(parsed_annotation)
+
+def clear_all():
+    state.reset_messages()
+    state.reset_annotation()
+    state.reset_document()
+
+def undo():
+    state.add_warning('"Undo Last Annotation" is not yet implemented')
+
+def example(n: int):
+    state.reset_messages()
+    if n == 1:
+        example_annotations = (
+            [['milk-e1', 'eggs-e2'], 'whisk-r1', ['whisk-r1-RES']],
+            [["whisked-eggs-e3", "sugar-e4"], 'mix-r2', ["mixture-e5"]],
+            [["it-e6", "cheese-e7"], 'mix-r3', ["mix-r3-RES"]],
+            [["whisked-eggs-e3"], '=', ["whisk-r1-RES"]],
+            [["mixture-e5"], '=', ["it-e6"]])
+        for a in example_annotations:
+            state.document.annotations.append(a)
+
+
+if state.document is None:
+    state.document = DOCUMENTS[0]
 
 st.set_page_config(layout="wide")
 
-st.write(current_recipe.text)
-st.info(' '.join(annotation))
-st.warning(' '.join(message))
+st.markdown(utils.style, unsafe_allow_html=True)
 
+st.sidebar.markdown('# Relation Annotation')
+st.sidebar.info("Annotation tool to build graphs for documents that "
+                "already have entities and relations (predicates).")
 
-def add_annotation():
-    annotations.append(annotation.copy())
-    reset_annotation()
+flavor = st.sidebar.radio('Flavor', ['Recipes', 'Arguments'])
 
-def clear():
-    reset_annotation()
+st.sidebar.markdown('# Document Actions')
+document_name = st.sidebar.selectbox(
+    'Select document',
+    [f'{document.name}' for document in DOCUMENTS],
+    on_change=select_document)
+state.document = DOCUMENTS.get_document(document_name)
 
-def next_recipe():
-    pass
+st.sidebar.button('Clear Annotations', on_click=clear_all)
+st.sidebar.button('Undo Last Annotation', on_click=undo)
+st.sidebar.button('Add Example Annotations', on_click=example, args=[1])
 
-def add_ingredient(text):
-    annotation.append('[%s]' % text)
+st.header(f'{state.document.name}')
+st.write(state.document)
+st.markdown(state.document.sentence_lines(), unsafe_allow_html=True)
+with st.form("link_form", clear_on_submit=True):
+    state.annotation = st.text_input('link', label_visibility="collapsed")
+    submitted = st.form_submit_button("Add Relation")
+    if submitted:
+        add_annotation(state.annotation)
 
-def add_relation(rel):
-    annotation.append(rel)
+status_table = pd.DataFrame(data=DOCUMENTS.table(), columns=['document', 'n'])
+st.sidebar.markdown('# Status')
+st.sidebar.info('Number of annotations added per document')
+st.sidebar.table(status_table)
 
-st.sidebar.button('Add Annotation', on_click=add_annotation)
-st.sidebar.button('Clear Annotation', on_click=clear)
-st.sidebar.button('Next Recipe', on_click=next_recipe)
+for message in state.info:
+    st.info(message)
 
-'---'
-ingredients_column, actions_column, relations_column, playpen = st.columns([2, 2, 2, 6])
+for message in state.warnings:
+    st.warning(message)
 
-ingredients_column.markdown('#### Ingredients')
-for ingredient in current_recipe.ingredients:
-    ingredients_column.button(ingredient, on_click=add_ingredient, args=[ingredient])
+graph_tab, list_tab, log_tab, help_tab, debug_tab \
+    = st.tabs(['Graph', 'List', 'Log', 'Help', 'Debug'])
 
-actions_column.markdown('#### Actions')
-for action in current_recipe.actions:
-    actions_column.button(action, on_click=add_relation, args=[action])
-
-relations_column.markdown('#### Relations')
-for rel in current_recipe.relations:
-    relations_column.button(rel, on_click=add_relation, args=[rel])
-
-playpen.graphviz_chart(get_graph())
-
-st.table(pd.DataFrame(annotations))
-
+with graph_tab:
+    st.graphviz_chart(Graph(state.document).graphviz())
+with list_tab:
+    st.table(pd.DataFrame(state.document.annotations))
+with log_tab:
+    st.table(pd.DataFrame(state.log, columns=['timestamp', 'type', 'message']))
+with help_tab:
+    with open('data/help/help.md') as fh:
+        st.markdown(fh.read())
+with debug_tab:
+    st.write('st.session_state')
+    st.json(st.session_state)

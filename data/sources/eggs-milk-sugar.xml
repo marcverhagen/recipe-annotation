@@ -1,0 +1,5 @@
+<document title="eggs-milk-sugar">
+<sentence><action>Whisk</action><id>r1</id> the <object>milk</object><id>e1</id> and <object>eggs</object><id>e2</id>.</sentence>
+<sentence><action>Mix</action><id>r2</id> <object>whisked eggs</object><id>e3</id> with the <object>sugar</object><id>e4</id> into a <object>mixture</object><id>e5</id>.</sentence>
+<sentence>Then <action>mix</action><id>r3</id> <object>it</object><id>e6</id> with the <object>cheese</object><id>e7</id>.</sentence>
+</document>

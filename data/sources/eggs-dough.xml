@@ -1,0 +1,5 @@
+<document title="eggs-dough">
+<sentence><action>Add</action><id>r1</id> <object>two eggs</object><id>e1</id> to the <object>dough</object><id>e2</id>.</sentence>
+<sentence><action>Heat</action><id>r2</id> in the oven for about 10 minutes until brown.</sentence>
+<sentence>Then <action>take</action><id>r3</id> the <object>dough</object><id>e3</id> and <object>one more egg</object><id>e4</id> and <object>some sugar</object><id>e5</id> and <action>mix</action><id>r4</id> into a <object>paste</object><id>e6</id>.</sentence>
+</document>

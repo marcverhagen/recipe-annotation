@@ -1,0 +1,9 @@
+# pick one of the flavors of the tool
+flavor: recipes
+
+# define a set of relations
+relations: ['=', '<', '>']
+
+# define whether implicit results are automatically inserted, for the recipes
+# flavor only
+use-implicit-results: True
